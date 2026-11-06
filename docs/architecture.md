@@ -130,8 +130,10 @@ Inputs per preview frame: `diff_prev` (against the previous preview frame), `sha
 | CAPTURED | `diff_prev ≥ motion_threshold` | MOVING | |
 
 - Entering Auto mode resets the state to MOVING.
-- **Never-settles hint:** if 5 s pass in MOVING/SETTLING without reaching CAPTURED while `sharpness ≥ threshold`, raise `never_settles`. Clear it on the next capture.
-- **Manual capture** bypasses the state machine. It captures the current full-resolution frame, with `blurry` set from the metrics. It does not change the trigger state, except that it updates the last-capture reference.
+- Thresholds are inclusive as written: "still" is `diff_prev < stability_threshold`, "sharp" is `sharpness ≥ sharpness_threshold`, "duplicate" is `diff_last_capture < duplicate_threshold`. In CAPTURED, diffs between `stability_threshold` and `motion_threshold` keep the state (hysteresis). At most one transition happens per frame.
+- **Never-settles hint:** if 5 s (`TriggerConfig.never_settles_ms`, default 5000) pass in MOVING/SETTLING without reaching CAPTURED while `sharpness ≥ threshold`, raise `never_settles`. The timer restarts on any blurry frame or on entering WAITING_FOCUS. Once raised, the hint stays until the next capture: reaching CAPTURED (including a duplicate), a manual capture, or `reset()`.
+- **Manual capture** bypasses the state machine. It captures the current full-resolution frame, with `blurry` set from the metrics. It does not change the trigger state, except that it updates the last-capture reference. The caller (`CameraWorker`) owns that reference frame and computes `diff_last_capture`; it then calls `CaptureTrigger.notify_manual_capture()`, which clears `never_settles`.
+- Code: `CaptureTrigger(config: TriggerConfig, clock)`, `update(diff_prev, sharpness, diff_last_capture) -> TriggerDecision(state, capture, hints)`, `reset()`, `notify_manual_capture()`. `TriggerConfig.from_settings(settings)` reads the §8.1 keys by name.
 
 ## 6. Preprocessing
 ### 6.1 Screen detection (`preprocess/detect.py`)
