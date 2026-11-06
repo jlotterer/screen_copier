@@ -1,5 +1,5 @@
 # TASK-06: Preprocessing (screen detection, warp, encode)
-**Status:** todo · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
+**Status:** done · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
 
 ## Goal
 Turn a full camera frame into a straightened, cropped, size-capped JPEG of just the source screen.
