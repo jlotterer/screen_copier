@@ -240,7 +240,7 @@ Keywords MUST / SHOULD / MAY follow RFC 2119.
 | ID | Category | Requirement | How Verified |
 | :--- | :--- | :--- | :--- |
 | REQ-NFR-01 | Responsiveness | The UI MUST never freeze for more than 100 ms during capture or transcription. | Automated UI latency test with simulated camera and recognizer |
-| REQ-NFR-02 | Performance | Preview ≥15 fps at 1080p. Preparing a 4K frame ≤300 ms. Adding a frame to the document ≤200 ms. | Timing tests, plus a manual check on the target laptop |
+| REQ-NFR-02 | Performance | The preview MUST run at ≥15 fps at 1080p. Preparing a 4K frame MUST take ≤300 ms. Adding a frame to the document MUST take ≤200 ms. | Timing tests, plus a manual check on the target laptop |
 | REQ-NFR-03 | Privacy | The API key MUST never appear in files the app writes, or in full in the UI. | Automated scan of the data folder for a test key |
 | REQ-NFR-04 | Privacy | Images MUST be sent only to the Anthropic API. | Code review, plus a test |
 | REQ-NFR-05 | Compatibility | MUST run on Windows 11 x64 with Python 3.12 and 3.13. | CI on Windows |
