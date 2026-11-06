@@ -74,7 +74,7 @@ src/screen_copier/
     store.py           SessionStore: atomic save/load, discovery, retention (§10.3)
     migrations.py      schema migration registry (§10.4)
   config/
-    paths.py           data_dir resolution
+    paths.py           data_dir resolution, atomic_write_text
     settings.py        Settings model + tolerant load/save (§8)
     secrets.py         API key resolution (§8.2)
     logging.py         rotating log + redaction (§16)
@@ -253,10 +253,12 @@ client.messages.create(
 - Load: parse JSON. Unknown keys are ignored, and missing or invalid keys use their default.
 - If the file is not valid JSON → rename it to `settings.bak.json` and use all defaults.
 - Save: atomic, the same way as sessions.
+- Values are range-checked (counts ≥ 0 or ≥ 1, thresholds ≥ 0, `line_similarity` in [0, 1], `model` non-empty); an out-of-range value counts as invalid and uses its default.
 
 ### 8.2 Secrets & paths
 - **API key:** `os.environ["ANTHROPIC_API_KEY"]` if set and non-empty, else `keyring.get_password("screen-copier", "anthropic_api_key")`. `keyring.errors.KeyringError` or no backend → the key is unavailable and the UI shows the "set ANTHROPIC_API_KEY" hint.
 - **"Test key":** sends a `messages.create` call with `max_tokens=1` and the text "ping" to the configured model.
+- **Storage:** `set_api_key` stores the stripped key in the keyring and raises on keyring errors; `clear_api_key` is a no-op when nothing is stored. `api_key_from_env()` tells the UI the key comes from the environment. `mask_key` returns `••••` + the last 4 characters, or just `••••` for keys of 4 characters or fewer.
 - **Data dir:** `SCREEN_COPIER_DATA_DIR`, else `platformdirs.user_data_dir("ScreenCopier", appauthor=False)`.
 
 ### 8.3 Environment variables
