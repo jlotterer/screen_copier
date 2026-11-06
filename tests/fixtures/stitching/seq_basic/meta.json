@@ -1,0 +1,7 @@
+{
+  "description": "Five unnumbered frames scrolling down a 112-line Python module, each overlapping the previous one by 2 to 4 lines. No partial lines, misreadings or gaps. The output equals the source.",
+  "uses_line_numbers": false,
+  "expected_events": [],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

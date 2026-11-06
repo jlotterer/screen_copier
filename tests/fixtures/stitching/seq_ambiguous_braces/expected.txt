@@ -1,0 +1,73 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import { Cart } from "../src/cart.js";
+
+describe("Cart", () => {
+  let cart;
+
+  beforeEach(() => {
+    cart = new Cart({ currency: "EUR" });
+  });
+
+  describe("add", () => {
+    it("adds a new line item", () => {
+      cart.add({ sku: "A1", price: 250, qty: 1 });
+      expect(cart.lines).toHaveLength(1);
+    });
+
+    it("merges quantities for the same sku", () => {
+      cart.add({ sku: "A1", price: 250, qty: 1 });
+      cart.add({ sku: "A1", price: 250, qty: 2 });
+      expect(cart.lines[0].qty).toBe(3);
+    });
+
+    describe("validation", () => {
+      it("rejects a zero quantity", () => {
+        expect(() => cart.add({ sku: "A1", price: 250, qty: 0 })).toThrow(
+          "qty must be positive",
+        );
+      });
+    });
+  });
+
+  describe("totals", () => {
+    beforeEach(() => {
+      cart.add({ sku: "A1", price: 250, qty: 2 });
+      cart.add({ sku: "B7", price: 1000, qty: 1 });
+    });
+
+    it("sums line totals", () => {
+      expect(cart.subtotal()).toBe(1500);
+    });
+
+    it("applies a percentage discount", () => {
+      cart.applyDiscount({ percent: 10 });
+      expect(cart.total()).toBe(1350);
+    });
+
+    describe("rounding", () => {
+      it("rounds half cents up", () => {
+        cart.applyDiscount({ percent: 33 });
+        expect(cart.total()).toBe(1005);
+      });
+    });
+  });
+
+  describe("remove", () => {
+    it("drops the line when qty reaches zero", () => {
+      cart.add({ sku: "A1", price: 250, qty: 1 });
+      cart.remove("A1", 1);
+      expect(cart.lines).toEqual([]);
+    });
+
+    describe("errors", () => {
+      it("throws for an unknown sku", () => {
+        expect(() => cart.remove("ZZ", 1)).toThrow("unknown sku ZZ");
+      });
+    });
+  });
+});
+<<<SCREEN-COPIER GAP: unknown lines between capture 3 and 4>>>
+      });
+    });
+  });
+

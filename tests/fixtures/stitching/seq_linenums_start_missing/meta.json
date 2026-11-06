@@ -1,0 +1,7 @@
+{
+  "description": "Two numbered frames. The first full line of frame 1 is line 5 (line 4 is clipped and partial), so lines 1-4 were never seen and a 'lines 1-4 missing' gap is rendered at the top (REQ-STI-04).",
+  "uses_line_numbers": true,
+  "expected_events": [],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

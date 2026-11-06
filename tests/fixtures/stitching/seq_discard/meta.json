@@ -1,0 +1,17 @@
+{
+  "description": "Frame 1 covers lines 1-30 and frame 3 lines 27-55. Frame 2 is junk: the user switched to a terminal. With all three frames the junk frame is an unplaced segment after a gap marker. Discarding frame 2 must give exactly the document built from frames 1 and 3: the source, no gap, no events (REQ-STI-10).",
+  "uses_line_numbers": false,
+  "expected_events": [
+    {
+      "kind": "gap_detected",
+      "frame_seq": 2
+    }
+  ],
+  "expected_conflicts": [],
+  "expected_flags": [],
+  "discard": [
+    2
+  ],
+  "expected_after_discard": "expected_after_discard.txt",
+  "expected_events_after_discard": []
+}

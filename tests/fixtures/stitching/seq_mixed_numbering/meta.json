@@ -1,0 +1,7 @@
+{
+  "description": "Frames 1 and 3 show line numbers. Frame 2 was captured with the gutter cropped (has_line_numbers: false), so it is placed by overlap against the numbered document (lines 24-27) and its lines inherit numbers 28-50 (§9.3). Frame 3's numbers then agree with the inherited ones. The output equals the source.",
+  "uses_line_numbers": true,
+  "expected_events": [],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

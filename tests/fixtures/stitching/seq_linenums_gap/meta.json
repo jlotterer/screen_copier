@@ -1,0 +1,7 @@
+{
+  "description": "Four numbered frames covering lines 1-40 and 48-90 of a 90-line file. Frame 2's clipped bottom line (41) and frame 3's clipped top line (47) are partial and do not count. Line-number mode places every line by number and renders a 'lines 41-47 missing' gap (REQ-STI-03, REQ-STI-04). Line-number gaps emit no event (only unplaced frames emit gap_detected).",
+  "uses_line_numbers": true,
+  "expected_events": [],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

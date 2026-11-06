@@ -12,6 +12,10 @@ REQ-STI-01, -02, -05, -06, -07, -08, -10, -11, REQ-NFR-02 (stitch timing)
 - [architecture.md §9.1, §9.2, §9.4, §9.5](../architecture.md#9-stitching), [§11](../architecture.md#11-gap-marker--text-format)
 - [decision 0003](../decisions/0003-stitch-text-not-images.md)
 - `tests/fixtures/stitching/README.md`
+- `src/screen_copier/models.py` (the contract) and [architecture.md §10.1](../architecture.md#101-entities-modelspy-pydantic-v2--code). TASK-02 added three things the stitcher must populate:
+  - `Observation.cut_off_right`: copied from each `RecognizedLine`. It drives the `cut_off` flag (§9.4).
+  - `Gap.kind`: `overlap` for unplaced-frame gaps (§9.2), `line_numbers` for numbered gaps (TASK-09). The controller's `gap` warning counts only `overlap` gaps (§12).
+  - `Gap.before_segment` and `Document.gaps`: each gap records the index of the segment it renders immediately before, and `Document.gaps` is kept in render order.
 
 ## Scope
 - `stitching/normalize.py`: `normalize`, `lines_match`, `is_distinctive`.
@@ -34,6 +38,10 @@ Line-number mode (TASK-09). Any Qt code.
 ## Done when
 - Every non-line-number fixture passes, both incrementally and in batch (REQ-STI-01).
 - Unit tests for `normalize` and `lines_match` edge cases, the distinctive-line rule, each §9.4 resolution step, and discard → re-stitch.
+- Unit tests for the TASK-02 contract fields:
+  - a `cut_off_right` line yields an `Observation` with `cut_off_right=True` and the `cut_off` flag;
+  - an unplaced frame yields a `Gap` with `kind=overlap` and the correct `before_segment`;
+  - `Document.gaps` stays consistent with `segments` after a bridge merges two segments and after discard → re-stitch.
 - Performance: adding one 60-line frame to a 2,000-line document takes ≤200 ms (median of 5, `@pytest.mark.perf`).
 - No PySide6 import.
 - If a fixture appears wrong, do **not** edit it silently. Raise it in the PR.

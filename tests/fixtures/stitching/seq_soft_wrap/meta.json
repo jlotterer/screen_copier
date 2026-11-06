@@ -1,0 +1,19 @@
+{
+  "description": "Two numbered frames. In frame 1 the editor soft-wraps line 19 (a long raise): the continuation has no line number of its own. It is kept as its own line right after line 19 with the soft_wrap flag, and word_wrap is emitted once for frame 1 (frame 1 also sets word_wrap_detected; one event per frame) (REQ-STI-09). The output equals the source except that line 19 is split in two.",
+  "uses_line_numbers": true,
+  "expected_events": [
+    {
+      "kind": "word_wrap",
+      "frame_seq": 1
+    }
+  ],
+  "expected_conflicts": [],
+  "expected_flags": [
+    {
+      "line": 20,
+      "flags": [
+        "soft_wrap"
+      ]
+    }
+  ]
+}

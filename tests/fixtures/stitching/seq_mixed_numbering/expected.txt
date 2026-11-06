@@ -1,0 +1,73 @@
+"""Parse and validate semantic version strings."""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from functools import total_ordering
+
+SEMVER_RE = re.compile(
+    r"^(?P<major>0|[1-9]\d*)\.(?P<minor>0|[1-9]\d*)\.(?P<patch>0|[1-9]\d*)"
+    r"(?:-(?P<pre>[0-9A-Za-z.-]+))?(?:\+(?P<build>[0-9A-Za-z.-]+))?$"
+)
+
+
+class VersionError(ValueError):
+    pass
+
+
+@total_ordering
+@dataclass(frozen=True)
+class Version:
+    major: int
+    minor: int
+    patch: int
+    pre: tuple[str, ...] = ()
+    build: str = ""
+
+    @classmethod
+    def parse(cls, text: str) -> Version:
+        match = SEMVER_RE.match(text.strip())
+        if match is None:
+            raise VersionError(f"not a semantic version: {text!r}")
+        pre = tuple(match["pre"].split(".")) if match["pre"] else ()
+        return cls(
+            int(match["major"]),
+            int(match["minor"]),
+            int(match["patch"]),
+            pre,
+            match["build"] or "",
+        )
+
+    def __str__(self) -> str:
+        text = f"{self.major}.{self.minor}.{self.patch}"
+        if self.pre:
+            text += "-" + ".".join(self.pre)
+        if self.build:
+            text += "+" + self.build
+        return text
+
+    def _key(self) -> tuple[object, ...]:
+        pre_key = tuple((0, int(p)) if p.isdigit() else (1, p) for p in self.pre)
+        return (self.major, self.minor, self.patch, not self.pre, pre_key)
+
+    def __lt__(self, other: object) -> bool:
+        if not isinstance(other, Version):
+            return NotImplemented
+        return self._key() < other._key()
+
+    def bump(self, part: str) -> Version:
+        if part == "major":
+            return Version(self.major + 1, 0, 0)
+        if part == "minor":
+            return Version(self.major, self.minor + 1, 0)
+        if part == "patch":
+            return Version(self.major, self.minor, self.patch + 1)
+        raise VersionError(f"unknown part {part!r}")
+
+
+def latest(versions: list[str], include_pre: bool = False) -> Version | None:
+    parsed = [Version.parse(v) for v in versions]
+    if not include_pre:
+        parsed = [v for v in parsed if not v.pre]
+    return max(parsed, default=None)

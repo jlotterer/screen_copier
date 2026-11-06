@@ -1,0 +1,70 @@
+import argparse
+import statistics
+import sys
+from collections import Counter
+from pathlib import Path
+
+LEVELS = ("DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL")
+
+
+def parse_line(line: str) -> tuple[str, str, float] | None:
+    parts = line.rstrip("\n").split(" ", 3)
+    if len(parts) < 4 or parts[2] not in LEVELS:
+        return None
+    timestamp, service, level, rest = parts
+    try:
+        duration = float(rest.rsplit("ms=", 1)[1])
+    except (IndexError, ValueError):
+        duration = 0.0
+    return service, level, duration
+
+
+def read_records(paths: list[Path]) -> list[tuple[str, str, float]]:
+    records = []
+    for path in paths:
+        with path.open(encoding="utf-8", errors="replace") as handle:
+            for line in handle:
+                record = parse_line(line)
+                if record is not None:
+                    records.append(record)
+    return records
+
+
+def summarize(records: list[tuple[str, str, float]]) -> dict[str, object]:
+    levels = Counter(level for _, level, _ in records)
+    durations = [duration for _, _, duration in records if duration > 0]
+    return {
+        "total": len(records),
+        "levels": dict(levels),
+        "median_ms": statistics.median(durations) if durations else None,
+        "slowest_ms": max(durations, default=None),
+    }
+
+
+def format_report(summary: dict[str, object]) -> str:
+    lines = [f"records: {summary['total']}"]
+    for level in LEVELS:
+        count = summary["levels"].get(level, 0)
+        lines.append(f"  {level:<8} {count:>6}")
+    if summary["median_ms"] is not None:
+        lines.append(f"median: {summary['median_ms']:.1f} ms")
+        lines.append(f"slowest: {summary['slowest_ms']:.1f} ms")
+    return "\n".join(lines)
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser(description="Summarize service logs.")
+    parser.add_argument("paths", nargs="+", type=Path)
+    parser.add_argument("--min-level", choices=LEVELS, default="DEBUG")
+    args = parser.parse_args(argv)
+    floor = LEVELS.index(args.min_level)
+    records = [r for r in read_records(args.paths) if LEVELS.index(r[1]) >= floor]
+    if not records:
+        print("no matching records", file=sys.stderr)
+        return 1
+    print(format_report(summarize(records)))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

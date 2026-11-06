@@ -1,0 +1,55 @@
+import json
+import os
+import tempfile
+from pathlib import Path
+from typing import Any
+
+
+class JsonStore:
+    """A small key-value store persisted as one JSON file."""
+
+    def __init__(self, path: Path) -> None:
+        self._path = path
+        self._data: dict[str, Any] = {}
+        if path.exists():
+            self._data = json.loads(path.read_text(encoding="utf-8"))
+
+    def get(self, key: str, default: Any = None) -> Any:
+        return self._data.get(key, default)
+
+    def set(self, key: str, value: Any) -> None:
+        self._data[key] = value
+        self._flush()
+
+    def delete(self, key: str) -> bool:
+        if key not in self._data:
+            return False
+        del self._data[key]
+        self._flush()
+        return True
+
+    def keys(self) -> list[str]:
+        return sorted(self._data)
+
+    def _flush(self) -> None:
+        self._path.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp_name = tempfile.mkstemp(dir=self._path.parent, suffix=".tmp")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as handle:
+                json.dump(self._data, handle, indent=2, sort_keys=True)
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(tmp_name, self._path)
+        except BaseException:
+            Path(tmp_name).unlink(missing_ok=True)
+            raise
+
+
+def migrate(store: JsonStore) -> int:
+    renamed = 0
+    for key in store.keys():
+        if key.startswith("legacy."):
+            store.set(key.removeprefix("legacy."), store.get(key))
+            store.delete(key)
+            renamed += 1
+    return renamed

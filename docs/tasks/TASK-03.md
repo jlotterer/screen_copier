@@ -1,5 +1,5 @@
 # TASK-03: Stitching fixtures (executable spec)
-**Status:** todo · **Wave:** 2 · **Depends on:** TASK-01 · **Parallel:** Yes (with TASK-02)
+**Status:** done · **Wave:** 2 · **Depends on:** TASK-01 · **Parallel:** Yes (with TASK-02)
 
 ## Goal
 Write the stitching test fixtures **before** the stitcher exists. Each fixture is a sequence of frame transcriptions plus the exact expected output. The stitching tasks (TASK-08, TASK-09) are then "make these pass." This is the most important spec artifact in the project. Correctness here matters more than speed.

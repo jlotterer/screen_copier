@@ -1,0 +1,55 @@
+"""Load application settings from environment variables."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, fields
+from typing import get_type_hints
+
+PREFIX = "APP_"
+TRUE_VALUES = {"1", "true", "yes", "on"}
+FALSE_VALUES = {"0", "false", "no", "off"}
+
+
+class ConfigError(Exception):
+    pass
+
+
+@dataclass
+class AppConfig:
+    debug: bool = False
+    port: int = 8000
+    workers: int = 2
+    database_url: str = "sqlite:///app.db"
+    request_timeout: float = 10.0
+    allowed_hosts: str = "localhost"
+
+
+def _convert(name: str, raw: str, kind: type) -> object:
+    if kind is bool:
+        lowered = raw.strip().lower()
+        if lowered in TRUE_VALUES:
+            return True
+        if lowered in FALSE_VALUES:
+            return False
+        raise ConfigError(f"{name}: expected a boolean, got {raw!r}")
+    try:
+        return kind(raw)
+    except ValueError as exc:
+        raise ConfigError(f"{name}: expected {kind.__name__}, got {raw!r}") from exc
+
+
+def load_config(environ: dict[str, str] | None = None) -> AppConfig:
+    environ = dict(os.environ if environ is None else environ)
+    hints = get_type_hints(AppConfig)
+    values: dict[str, object] = {}
+    for spec in fields(AppConfig):
+        key = PREFIX + spec.name.upper()
+        if key in environ:
+            values[spec.name] = _convert(key, environ[key], hints[spec.name])
+    config = AppConfig(**values)
+    if config.port <= 0 or config.port > 65535:
+        raise ConfigError(f"{PREFIX}PORT out of range: {config.port}")
+    if config.workers < 1:
+        raise ConfigError(f"{PREFIX}WORKERS must be at least 1")
+    return config
