@@ -24,7 +24,7 @@
  │        │ Frame(status=queued) ──► SessionStore (atomic autosave)                │
  │        ▼                                                                        │
  │  RecognitionQueue (thread pool, ≤N in flight, retry/backoff, offline hold)      │
- │        │  HTTPS ──► Anthropic Messages API (vision, forced tool call)           │
+ │        │  HTTPS ──► Anthropic Messages API (vision, strict tool call)           │
  │        ▼ FrameResult, released strictly in capture order                        │
  │  Stitcher (pure, deterministic) → Document (segments, gaps, issues) + events    │
  │        │                                   │                                    │
@@ -154,9 +154,11 @@ class Recognizer(Protocol):
     def recognize(self, jpeg: bytes, *, frame_seq: int) -> RecognitionOutcome: ...
 
 RecognitionOutcome = Ok | Retryable | AuthError | BadRequest | Malformed
-# Ok(result: FrameResult, usage: Usage)   Retryable(reason: str)   AuthError(message: str)
-# BadRequest(message: str)                Malformed(raw: str)
+# Ok(result: FrameResult, usage: Usage)
+# Retryable(reason: str, connection_error: bool = False)   # True: no HTTP response (for §7.4 offline)
+# AuthError(message: str)   BadRequest(message: str)   Malformed(raw: str)
 ```
+Outcomes are frozen dataclasses. A recognizer never retries and never raises for API or response problems.
 
 ### 7.2 Prompt & tool (`recognition/prompt.py`)
 The system prompt MUST contain one instruction for each item of REQ-OCR-02:
@@ -167,23 +169,26 @@ The system prompt MUST contain one instruction for each item of REQ-OCR-02:
 - **Edge flags:** `partial` for lines clipped at the top or bottom; `cut_off_right` for lines that run past the right edge.
 - **Uncertainty:** `uncertain` plus `uncertain_note` for ambiguous characters (`l/1/I`, `O/0`, `{/(`, `;/:`, `` `/' ``, and the count of spaces).
 - **Word wrap:** `word_wrap_detected` when soft-wrapped continuation lines are seen.
-- **Output:** respond only through the tool.
+- **Output:** respond only through the tool. With `tool_choice` `auto` (§7.3), this instruction is what makes the model call the tool.
 
-`REPORT_TOOL`:
+`REPORT_TOOL` is `strict` (decision 0006), so the API guarantees schema-valid `input`. Strict mode needs `additionalProperties: false` on every object and every property in `required`; nullable properties are required and may be `null`:
 ```json
 {
   "name": "report_transcription",
   "description": "Report the exact transcription of the code visible on screen.",
+  "strict": true,
   "input_schema": {
     "type": "object",
-    "required": ["has_line_numbers", "word_wrap_detected", "lines"],
+    "additionalProperties": false,
+    "required": ["has_line_numbers", "language_guess", "word_wrap_detected", "lines"],
     "properties": {
       "has_line_numbers": {"type": "boolean"},
       "language_guess": {"type": ["string", "null"]},
       "word_wrap_detected": {"type": "boolean"},
       "lines": {"type": "array", "items": {
         "type": "object",
-        "required": ["text", "line_number", "partial", "cut_off_right", "uncertain"],
+        "additionalProperties": false,
+        "required": ["text", "line_number", "partial", "cut_off_right", "uncertain", "uncertain_note"],
         "properties": {
           "text": {"type": "string"},
           "line_number": {"type": ["integer", "null"]},
@@ -199,20 +204,26 @@ The system prompt MUST contain one instruction for each item of REQ-OCR-02:
 
 ### 7.3 API call (`recognition/claude.py`)
 ```python
-client = anthropic.Anthropic(api_key=key, max_retries=0, timeout=60.0)  # the queue owns retries
+client = anthropic.Anthropic(api_key=key, base_url="https://api.anthropic.com",
+                             max_retries=0, timeout=60.0)  # the queue owns retries
 client.messages.create(
-    model=settings.model, max_tokens=8192, temperature=0, system=SYSTEM_PROMPT,
-    tools=[REPORT_TOOL], tool_choice={"type": "tool", "name": "report_transcription"},
+    model=settings.model, max_tokens=8192, system=SYSTEM_PROMPT,
+    tools=[REPORT_TOOL], tool_choice={"type": "auto"},
     messages=[{"role": "user", "content": [
         {"type": "image", "source": {"type": "base64", "media_type": "image/jpeg", "data": b64}},
         {"type": "text", "text": "Transcribe this screen."}]}])
 ```
+- **No forced `tool_choice` and no `temperature`** (decision 0006): `claude-sonnet-5-5` rejects `tool_choice` `tool`/`any` with a 400, and the SDK (anthropic 2.x, API version `2026-10-21`) has no sampling parameters. The system prompt requires the tool; a reply without it is `Malformed` and the queue retries it once (§7.4).
+- **`base_url` is pinned** so an `ANTHROPIC_BASE_URL` environment variable cannot send frames elsewhere (REQ-NFR-04).
+- **Client factory:** `ClaudeRecognizer(client_factory, settings)` calls the factory on every request and reads `settings.model` on every request. `client_factory_for(key_provider)` reuses one client until the key changes. If no key is set, the factory raises `MissingApiKeyError`, which maps to `AuthError`.
+
 | SDK outcome | Mapped to |
 | :--- | :--- |
-| `APIConnectionError`, `APITimeoutError`, HTTP 429, 500, 502, 503, 529 | `Retryable` |
-| HTTP 401, 403 | `AuthError` |
-| HTTP 400, 404, 413 | `BadRequest` (no retry; the frame fails with the API message) |
-| No `tool_use` block, or pydantic validation of `input` fails | `Malformed` |
+| `APIConnectionError`, `APITimeoutError` | `Retryable(connection_error=True)` |
+| HTTP 429, 500, 502, 503, 529 (also 408, 409 and any other 5xx) | `Retryable` |
+| HTTP 401, 403, or no API key | `AuthError` (the API's message; never the key) |
+| HTTP 400, 404, 413 (also any other 4xx) | `BadRequest` (no retry; the frame fails with the API message) |
+| No `report_transcription` `tool_use` block, `stop_reason` `max_tokens` or `refusal`, or pydantic validation of `input` fails | `Malformed` (raw truncated to 2,000 chars) |
 | Valid `tool_use` | `Ok(FrameResult, Usage(input_tokens, output_tokens))` |
 
 ### 7.4 Queue (`recognition/queue.py`)
