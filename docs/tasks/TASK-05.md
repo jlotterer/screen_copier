@@ -1,5 +1,5 @@
 # TASK-05: Quality metrics + auto-capture state machine
-**Status:** todo · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
+**Status:** done · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
 
 ## Goal
 Implement the pure logic that decides when Auto mode captures a frame.
