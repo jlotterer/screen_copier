@@ -1,5 +1,5 @@
 # TASK-01: Project scaffold
-**Status:** todo · **Wave:** 1 · **Depends on:** — · **Parallel:** No
+**Status:** done · **Wave:** 1 · **Depends on:** — · **Parallel:** No
 
 ## Goal
 Create the project skeleton so that every later task has a working package, test runner, linter and CI to build on.
