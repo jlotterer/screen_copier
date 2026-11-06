@@ -1,5 +1,5 @@
 # TASK-04: Config, secrets, data dir, logging
-**Status:** todo · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
+**Status:** done · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
 
 ## Goal
 Provide settings persistence, API-key resolution, data-dir paths and safe logging for the rest of the app.
