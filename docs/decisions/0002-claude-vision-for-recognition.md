@@ -1,6 +1,6 @@
 # 0002: Claude vision API for text recognition, no local OCR
 
-- **Status:** Accepted, 2026-11-06
+- **Status:** Accepted, 2026-11-06. Call mechanism amended by [0006](0006-strict-tool-auto-choice.md): a strict tool with `tool_choice: auto` replaces the forced tool call.
 - **Requirements affected:** REQ-OCR-01, REQ-OCR-02, REQ-SES-06, REQ-NFR-04
 
 ## Context

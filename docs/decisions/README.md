@@ -9,6 +9,7 @@ Short records of significant decisions and **why** they were made. Agents: read 
 | [0003](0003-stitch-text-not-images.md) | Stitch recognized text, not images; use line numbers when visible | Accepted |
 | [0004](0004-capture-modes-and-scope.md) | Auto + manual capture; vertical scrolling only; one file per session | Accepted |
 | [0005](0005-windows-only-uv-tool-install.md) | Windows 11 only; `uv tool install` + desktop shortcut | Accepted |
+| [0006](0006-strict-tool-auto-choice.md) | Strict tool with `tool_choice: auto`; no forced tool call or temperature (amends 0002) | Accepted |
 
 ## Template
 ```markdown

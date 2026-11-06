@@ -1,5 +1,5 @@
 # TASK-07: Recognition client (Claude + fake)
-**Status:** todo · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
+**Status:** done · **Wave:** 3 · **Depends on:** TASK-02 · **Parallel:** Yes
 
 ## Goal
 Implement a single-frame recognizer that sends one JPEG to Claude and returns a typed outcome, plus a fake recognizer for tests and demos.
@@ -26,7 +26,7 @@ Retries, concurrency, ordering and offline handling (TASK-13).
 `src/screen_copier/recognition/base.py`, `prompt.py`, `claude.py`, `fake.py`, `tests/recognition/test_client.py`, `tests/fixtures/recognizer/seq_basic/`
 
 ## Done when
-- Request-shape test: model `claude-sonnet-5-5`, temperature 0, `tool_choice` forced to `report_transcription`, one base64 `image/jpeg` block, and the client built with `max_retries=0`.
+- Request-shape test: model `claude-sonnet-5-5`, no sampling parameters, `tool_choice` `auto` with a `strict` `report_transcription` tool, one base64 `image/jpeg` block, and the client built with `max_retries=0`. (Amended by [decision 0006](../decisions/0006-strict-tool-auto-choice.md): Sonnet 5.5 rejects forced `tool_choice`, and API version `2026-10-21` rejects `temperature`.)
 - Prompt test: the system prompt contains an instruction for each REQ-OCR-02 item (exact text, indentation as spaces, line numbers separate, ignore UI, partial, cut_off_right, uncertain + note, word wrap).
 - Error-mapping test: each §7.3 row is mapped correctly, using fake SDK exceptions or responses.
 - A response without `tool_use`, or with invalid input → `Malformed`.
