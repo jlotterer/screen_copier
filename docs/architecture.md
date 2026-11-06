@@ -324,14 +324,14 @@ Other flags:
 ### 10.1 Entities (`models.py`, pydantic v2) _(→ code)_
 | Entity | Field | Type | Constraints / Notes |
 | :--- | :--- | :--- | :--- |
-| Session | schema_version | int | = 1 |
-| Session | id | str (uuid4) | Folder name |
-| Session | created_at, updated_at | datetime (UTC) | |
+| Session | schema_version | int | = `SCHEMA_VERSION` (1). Greater → `UnsupportedVersion` is raised (not a `ValidationError`). Lower → must be migrated first (§10.4). |
+| Session | id | str (uuid4) | Folder name. Canonical lowercase form. |
+| Session | created_at, updated_at | datetime (UTC) | All datetimes must be timezone-aware; they are normalized to UTC and serialized with `Z`. |
 | Session | state | `capturing` \| `reviewing` \| `saved` | |
 | Session | saved_at | datetime \| null | Set when saved |
 | Session | output_path | str \| null | |
 | Session | language | str \| null | User override. Null means use the vote. |
-| Session | frames | list[Frame] | Ordered by seq |
+| Session | frames | list[Frame] | Ordered by seq (validated strictly increasing) |
 | Session | edited_text | str \| null | Non-null once the user edits. Then it is the truth for the text. |
 | Session | usage | Usage | `input_tokens`, `output_tokens` ≥ 0 |
 | Frame | seq | int ≥ 1 | Unique, increasing |
@@ -343,21 +343,26 @@ Other flags:
 | Frame | attempts | int ≥ 0 | |
 | Frame | error | str \| null | |
 | Frame | result | FrameResult \| null | Non-null iff `recognized` |
-| FrameResult | has_line_numbers, word_wrap_detected | bool | §7.2 |
+| FrameResult | has_line_numbers, word_wrap_detected | bool | §7.2. FrameResult and RecognizedLine use strict types and ignore unknown keys, so they parse `tool_use.input` directly. |
 | FrameResult | language_guess | str \| null | |
 | FrameResult | lines | list[RecognizedLine] | Top to bottom, may be empty |
-| RecognizedLine | text | str | No line number, no newline |
+| RecognizedLine | text | str | No line number, no newline (CR and LF are rejected) |
 | RecognizedLine | line_number | int ≥ 1 \| null | |
 | RecognizedLine | partial, cut_off_right, uncertain | bool | |
 | RecognizedLine | uncertain_note | str \| null | |
 | Document *(derived)* | segments | list[Segment] | Never persisted |
+| Document | gaps | list[Gap] | In render order |
 | Segment | lines | list[DocLine] | Non-empty |
 | Segment | first_line_number | int \| null | |
 | DocLine | text | str | Resolved |
-| DocLine | observations | list[{frame_seq, text, uncertain}] | ≥1 |
+| DocLine | observations | list[Observation] | ≥1 |
 | DocLine | flags | set of `uncertain` \| `conflict` \| `cut_off` \| `soft_wrap` | |
 | DocLine | alternatives | list[str] | |
-| Gap *(derived)* | description | str | §9.5 |
+| Observation | frame_seq, text, uncertain, cut_off_right | int ≥ 1, str, bool, bool | `cut_off_right` feeds the `cut_off` flag (§9.4) |
+| Gap *(derived)* | kind | `overlap` \| `line_numbers` | Overlap gaps drive the `gap` warning (§12) |
+| Gap | description | str | §9.5 |
+| Gap | before_segment | int ≥ 0 | Index of the segment the marker renders immediately before |
+| StitchEvent *(derived)* | kind, frame_seq | `gap_detected` \| `gap_closed` \| `ambiguous_overlap` \| `cut_off` \| `word_wrap`, int ≥ 1 | §9.5 |
 
 ### 10.2 State ownership
 | State | Where | Survives restart |

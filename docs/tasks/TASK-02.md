@@ -1,5 +1,5 @@
 # TASK-02: Data models
-**Status:** todo · **Wave:** 2 · **Depends on:** TASK-01 · **Parallel:** Yes (with TASK-03)
+**Status:** done · **Wave:** 2 · **Depends on:** TASK-01 · **Parallel:** Yes (with TASK-03)
 
 ## Goal
 Define the pydantic models that every other module exchanges. After this task, `models.py` is the source of truth for the data contract.
