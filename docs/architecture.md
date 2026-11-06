@@ -141,11 +141,15 @@ Inputs per preview frame: `diff_prev` (against the previous preview frame), `sha
 2. `findContours` (external) → `approxPolyDP` (2% of the perimeter) → keep convex 4-point polygons with area ≥ 20% of the frame.
 3. Choose the largest. Order the corners TL, TR, BR, BL.
 4. Return `None` if none qualifies.
-- The preview overlay averages corner positions over the last 5 detections (display only). Capture uses detection on the captured frame itself, or the locked quad if one is set.
+- A `Quad` is a `(4, 2)` float32 numpy array of frame pixel coordinates, ordered TL, TR, BR, BL.
+- The preview overlay (`QuadSmoother`) averages corner positions over the last 5 detections (display only). A missed detection clears the history, so the overlay disappears rather than showing a stale outline. Capture uses detection on the captured frame itself, or the locked quad if one is set.
 
 ### 6.2 Warp & encode (`preprocess/warp.py`)
-- **Output size:** width = max(top edge, bottom edge), height = max(left edge, right edge). Apply `getPerspectiveTransform` + `warpPerspective` (`INTER_CUBIC`).
-- **Degenerate result** (output area < 1% of the frame) → use the full frame and log a warning.
+- **Aspect ratio:** estimated from the quad with Zhang & He, *Whiteboard scanning and image enhancement* (2007), assuming square pixels and the principal point at the frame center. The naive "longest edges" size is 10–15% off at a 15° tilt, which fails REQ-PRE-01.
+  - The focal length is recovered from the quad when both edge pairs converge (tilt measure ≥ `MIN_TILT` = 0.01, about 0.5°) and the estimate lies within 0.3–3.0 × frame width.
+  - Otherwise (tilt about one axis only, so one edge pair stays parallel) a focal length of 0.8 × frame width (~64° HFOV, a typical webcam) is assumed. In that case the result is insensitive to the guess: ≤ 2.5% error at 15° for 40–78° HFOV cameras.
+- **Output size:** start from width = max(top edge, bottom edge), height = max(left edge, right edge), then enlarge the shorter side to match the estimated aspect ratio (never shrink). Apply `getPerspectiveTransform` + `warpPerspective` (`INTER_CUBIC`).
+- **Degenerate result** (non-convex quad, or quad or output area < 1% of the frame) → use the full frame and log a warning. `process()` then reports `quad_used = None`.
 - **Resize:** scale down so the long edge is ≤ `max_image_edge_px` (`INTER_AREA`). Never upscale.
 - **Encode:** JPEG, quality 90, color (not grayscale). These exact bytes are stored as `frames/<seq>.jpg` and sent to the API.
 
@@ -493,6 +497,7 @@ Capture-only shortcuts (Space, A, Delete) are disabled while the CodeEditor has 
 - **Unit (no Qt):** `tests/camera/` (synthetic numpy frames + a fake clock), `tests/preprocess/` (synthetic images from `tests/fixtures/images/make_synthetic.py`), `tests/recognition/` (an injected fake client), `tests/stitching/`, `tests/output/`, `tests/session/`, `tests/config/`.
 - **Stitching fixtures** (`tests/fixtures/stitching/<name>/`): `frames/<seq>.json` (FrameResult JSON), `expected.txt` (rendered output including gap markers), `meta.json` (`{"description", "expected_events": [{"kind", "frame_seq"}], "expected_conflicts": [{"line", "alternatives"}]}`). A generic test runs every fixture both incrementally and in batch.
 - **UI (pytest-qt):** with the fake camera, the fake recognizer and `tmp_path` as the data dir.
+- **Timing tests** are marked `@pytest.mark.perf` (registered in `pyproject.toml`). They run by default; skip them on slow machines with `uv run pytest -m "not perf"`.
 - **Manual / hardware:** `scripts/benchmark.py` (TASK-21).
 
 ## 18. Design Assumptions

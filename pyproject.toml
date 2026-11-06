@@ -54,3 +54,6 @@ select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
 testpaths = ["tests"]
 qt_api = "pyside6"
 addopts = ["--import-mode=importlib"]
+markers = [
+    "perf: timing test; skip on slow CI with -m 'not perf'",
+]
