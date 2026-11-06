@@ -1,0 +1,112 @@
+"""Inventory tracking for a small warehouse."""
+
+from __future__ import annotations
+
+import csv
+import logging
+from dataclasses import dataclass, field
+from datetime import date
+from pathlib import Path
+
+log = logging.getLogger(__name__)
+
+LOW_STOCK_THRESHOLD = 5
+DEFAULT_LOCATION = "MAIN"
+
+
+class InventoryError(Exception):
+    """Raised when an operation would leave the inventory invalid."""
+
+
+@dataclass
+class Item:
+    sku: str
+    name: str
+    quantity: int = 0
+    location: str = DEFAULT_LOCATION
+    tags: set[str] = field(default_factory=set)
+
+    def is_low(self) -> bool:
+        return self.quantity <= LOW_STOCK_THRESHOLD
+
+
+@dataclass
+class Movement:
+    sku: str
+    delta: int
+    when: date
+    reason: str = ""
+
+
+class Inventory:
+    def __init__(self) -> None:
+        self._items: dict[str, Item] = {}
+        self._history: list[Movement] = []
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __contains__(self, sku: object) -> bool:
+        return sku in self._items
+
+    def add_item(self, item: Item) -> None:
+        if item.sku in self._items:
+            raise InventoryError(f"duplicate sku {item.sku}")
+        if item.quantity < 0:
+            raise InventoryError("quantity cannot be negative")
+        self._items[item.sku] = item
+        log.info("added %s (%s)", item.sku, item.name)
+
+    def get(self, sku: str) -> Item:
+        try:
+            return self._items[sku]
+        except KeyError:
+            raise InventoryError(f"unknown sku {sku}") from None
+
+    def adjust(self, sku: str, delta: int, reason: str = "") -> int:
+        item = self.get(sku)
+        new_quantity = item.quantity + delta
+        if new_quantity < 0:
+            raise InventoryError(
+                f"cannot remove {-delta} of {sku}; only {item.quantity} left"
+            )
+        item.quantity = new_quantity
+        self._history.append(Movement(sku, delta, date.today(), reason))
+        return new_quantity
+
+    def low_stock(self) -> list[Item]:
+        items = [item for item in self._items.values() if item.is_low()]
+        return sorted(items, key=lambda item: (item.quantity, item.sku))
+
+    def by_location(self, location: str) -> list[Item]:
+        return [item for item in self._items.values() if item.location == location]
+
+    def history_for(self, sku: str) -> list[Movement]:
+        return [move for move in self._history if move.sku == sku]
+
+
+def load_csv(path: Path) -> Inventory:
+    inventory = Inventory()
+    with path.open(newline="", encoding="utf-8") as handle:
+        for row in csv.DictReader(handle):
+            tags = {tag.strip() for tag in row.get("tags", "").split(";") if tag.strip()}
+            inventory.add_item(
+                Item(
+                    sku=row["sku"],
+                    name=row["name"],
+                    quantity=int(row["quantity"]),
+                    location=row.get("location") or DEFAULT_LOCATION,
+                    tags=tags,
+                )
+            )
+    return inventory
+
+
+def write_report(inventory: Inventory, path: Path) -> int:
+    rows = inventory.low_stock()
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.writer(handle)
+        writer.writerow(["sku", "name", "quantity", "location"])
+        for item in rows:
+            writer.writerow([item.sku, item.name, item.quantity, item.location])
+    return len(rows)

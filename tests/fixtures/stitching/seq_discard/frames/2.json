@@ -1,0 +1,47 @@
+{
+  "has_line_numbers": false,
+  "language_guess": null,
+  "word_wrap_detected": false,
+  "lines": [
+    {
+      "text": "PS C:\\work\\billing> uv run pytest -q",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "..........F.....",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "FAILED tests/test_invoice.py::test_rounding - assert 10.04 == 10.05",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "1 failed, 15 passed in 0.84s",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "PS C:\\work\\billing>",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    }
+  ]
+}

@@ -1,0 +1,359 @@
+{
+  "has_line_numbers": false,
+  "language_guess": "python",
+  "word_wrap_detected": false,
+  "lines": [
+    {
+      "text": "import argparse",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "import statistics",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "import sys",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "from collections import Counter",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "from pathlib import Path",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "LEVELS = (\"DEBUG\", \"INFO\", \"WARNING\", \"ERROR\", \"CRITICAL\")",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def parse_line(line: str) -> tuple[str, str, float] | None:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    parts = line.rstrip(\"\\n\").split(\" \", 3)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    if len(parts) < 4 or parts[2] not in LEVELS:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        return None",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    timestamp, service, level, rest = parts",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    try:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        duration = float(rest.rsplit(\"ms=\", 1)[1])",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    except (IndexError, ValueError):",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        duration = 0.0",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    return service, level, duration",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def read_records(paths: list[Path]) -> list[tuple[str, str, float]]:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    records = []",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    for path in paths:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        with path.open(encoding=\"utf-8\", errors=\"replace\") as handle:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "            for line in handle:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "                record = parse_line(line)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "                if record is not None:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "                    records.append(record)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    return records",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def summarize(records: list[tuple[str, str, float]]) -> dict[str, object]:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    levels = Counter(level for _, level, _ in records)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    durations = [duration for _, _, duration in records if duration > 0]",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    return {",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        \"total\": len(records),",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        \"levels\": dict(levels),",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        \"median_ms\": statistics.median(durations) if durations else None,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        \"slowest_ms\": max(durations, default=None),",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    }",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def fo",
+      "line_number": null,
+      "partial": true,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    }
+  ]
+}

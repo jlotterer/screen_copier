@@ -1,0 +1,159 @@
+{
+  "has_line_numbers": false,
+  "language_guess": "python",
+  "word_wrap_detected": false,
+  "lines": [
+    {
+      "text": "    retum \"\\n\".jom(lines)",
+      "line_number": null,
+      "partial": true,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def main(argv: list[str] | None = None) -> int:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    parser = argparse.ArgumentParser(description=\"Summarize service logs.\")",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    parser.add_argument(\"paths\", nargs=\"+\", type=Path)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    parser.add_argument(\"--min-level\", choices=LEVELS, default=\"DEBUG\")",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    args = parser.parse_args(argv)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    floor = LEVELS.index(args.min_level)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    records = [r for r in read_records(args.paths) if LEVELS.index(r[1]) >= floor]",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    if not records:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        print(\"no matching records\", file=sys.stderr)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        return 1",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    print(format_report(summarize(records)))",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    return 0",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "if __name__ == \"__main__\":",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    raise SystemExit(main())",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    }
+  ]
+}

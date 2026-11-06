@@ -1,0 +1,7 @@
+{
+  "description": "An 88-line JSON config. Frames 1-2 scroll down to line 45, frame 3 scrolls back up to lines 9-30 (fully contained in the document), then frames 4-5 scroll down to the end. The contained frame only adds observations: no duplicated or missing lines (REQ-STI-05). The output equals the source.",
+  "uses_line_numbers": false,
+  "expected_events": [],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

@@ -1,0 +1,12 @@
+{
+  "description": "Unnumbered frames 1-2 cover lines 1-46. The user then scrolls too far: frame 3 starts at line 60 and shares no line with the document, so it becomes a new segment after a gap marker and emits gap_detected (REQ-STI-06). Frame 4 extends that second segment. Lines 47-59 were never captured.",
+  "uses_line_numbers": false,
+  "expected_events": [
+    {
+      "kind": "gap_detected",
+      "frame_seq": 3
+    }
+  ],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

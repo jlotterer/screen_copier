@@ -1,0 +1,311 @@
+{
+  "has_line_numbers": false,
+  "language_guess": "python",
+  "word_wrap_detected": false,
+  "lines": [
+    {
+      "text": "def backoff_delays(base: float, cap: float, attempts: int, rng: random.Random) -> list[float]:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    delays = []",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    for attempt in range(atternpts):",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        ceiling = min(cap, base * 2**attempt)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        delays.append(rng.uniform(0, ceiling))",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    return delays",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def is_retryable(error: Exception) -> bool:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    status = getattr(error, \"status_code\", None)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    if status is not None:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        return status in RETRYABLE_STATUS",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    return isinstance(error, (TimeoutError, ConnectionError))",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "def retry(",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    call: Callable[[], T],",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    *,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    max_attempts: int = 6,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    base_delay: float = 0.5,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    max_delay: float = 30.0,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    sleep: Callable[[float], None] = time.sleep,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    seed: int | None = None,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": ") -> T:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    rng = random.Random(seed)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    delays = backoff_delays(base_delay, max_delay, max_attempts - 1, rng)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    last_error: Exception | None = None",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    for attempt in range(max_attempts):",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        try:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "            return call()",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "        except Exception as error:",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "            if not is_retryable(error):",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "                raise",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "            last_error = error",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "            if attempt < len(delays):",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "                sleep(delays[attempt])",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    assert last_error is not None",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    raise RetryError(max_attempts, last_error)",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    }
+  ]
+}

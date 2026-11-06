@@ -1,0 +1,207 @@
+{
+  "has_line_numbers": false,
+  "language_guess": "json",
+  "word_wrap_detected": false,
+  "lines": [
+    {
+      "text": "    \"migrations_dir\": \"./migrations\"",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "  },",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "  \"cache\": {",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    \"backend\": \"redis\",",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    \"url\": \"redis://cache.internal.example:6379/0\",",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    \"default_ttl_s\": 120,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    \"key_prefix\": \"orders:\"",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "  },",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "  \"queues\": [",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    {",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"name\": \"order-created\",",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"visibility_timeout_s\": 60,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"max_receive_count\": 5,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"dead_letter\": \"order-created-dlq\"",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    },",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    {",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"name\": \"payment-settled\",",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"visibility_timeout_s\": 120,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"max_receive_count\": 3,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"dead_letter\": \"payment-settled-dlq\"",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    },",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "    {",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"name\": \"shipment-dispatched\",",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"visibility_timeout_s\": 90,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    },
+    {
+      "text": "      \"max_receive_count\": 8,",
+      "line_number": null,
+      "partial": false,
+      "cut_off_right": false,
+      "uncertain": false,
+      "uncertain_note": null
+    }
+  ]
+}

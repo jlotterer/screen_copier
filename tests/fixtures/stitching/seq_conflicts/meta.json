@@ -1,0 +1,28 @@
+{
+  "description": "Three unnumbered frames with large overlaps (lines 20-24 are seen by all three). Line 3: seen once, marked uncertain, so it keeps the uncertain flag. Line 15: frame 1 reads it correctly; frame 2 (later) reads '{Iast_error}' and marks it uncertain, so the certain reading wins (§9.4 step 2). Line 22: frames 1 and 2 agree; frame 3 (latest) misreads 'atternpts' confidently, so the majority wins (step 3). Line 38: frame 2 reads '= 5', frame 3 (latest) reads '= 6', both confident: the latest is rendered and the line is a conflict with both alternatives (steps 4-5, REQ-STI-08).",
+  "uses_line_numbers": false,
+  "expected_events": [],
+  "expected_conflicts": [
+    {
+      "line": 38,
+      "alternatives": [
+        "    max_attempts: int = 6,",
+        "    max_attempts: int = 5,"
+      ]
+    }
+  ],
+  "expected_flags": [
+    {
+      "line": 3,
+      "flags": [
+        "uncertain"
+      ]
+    },
+    {
+      "line": 38,
+      "flags": [
+        "conflict"
+      ]
+    }
+  ]
+}

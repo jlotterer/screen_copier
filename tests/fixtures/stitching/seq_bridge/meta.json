@@ -1,0 +1,16 @@
+{
+  "description": "Frames 1-3 as in seq_no_overlap (a gap after line 46). The user scrolls back up: frame 4 covers lines 42-63, overlapping segment 1 by 5 lines and segment 2 by 4. It extends segment 1 (the higher score), and the bridge test then merges segment 2 into it: the gap marker disappears and gap_closed is emitted (REQ-STI-07). Frame 5 extends the merged segment. The output equals the source.",
+  "uses_line_numbers": false,
+  "expected_events": [
+    {
+      "kind": "gap_detected",
+      "frame_seq": 3
+    },
+    {
+      "kind": "gap_closed",
+      "frame_seq": 4
+    }
+  ],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

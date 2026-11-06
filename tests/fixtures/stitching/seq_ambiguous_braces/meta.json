@@ -1,0 +1,16 @@
+{
+  "description": "A JavaScript test file with runs of '});' lines (a bare '}' is not distinctive, '});' is). Frames 1-3 cover the whole file. Frame 4 is a small view whose only full lines are '});' x3 and a blank line; it matches lines 28-31 and 51-54 equally well. The stitcher must not guess: it emits ambiguous_overlap, treats the frame as unplaced (gap_detected) and renders it as its own segment after a gap marker (REQ-STI-06).",
+  "uses_line_numbers": false,
+  "expected_events": [
+    {
+      "kind": "ambiguous_overlap",
+      "frame_seq": 4
+    },
+    {
+      "kind": "gap_detected",
+      "frame_seq": 4
+    }
+  ],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

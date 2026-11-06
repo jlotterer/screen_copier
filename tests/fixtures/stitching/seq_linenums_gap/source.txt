@@ -1,0 +1,90 @@
+from __future__ import annotations
+
+import operator
+import re
+from collections.abc import Iterator
+from dataclasses import dataclass
+
+TOKEN_RE = re.compile(r"\s*(?:(\d+\.?\d*)|(\*\*|[-+*/()]))")
+
+BINARY_OPS = {
+    "+": (1, operator.add),
+    "-": (1, operator.sub),
+    "*": (2, operator.mul),
+    "/": (2, operator.truediv),
+    "**": (3, operator.pow),
+}
+RIGHT_ASSOCIATIVE = {"**"}
+
+
+class ParseError(ValueError):
+    def __init__(self, message: str, position: int) -> None:
+        super().__init__(f"{message} at position {position}")
+        self.position = position
+
+
+@dataclass(frozen=True)
+class Token:
+    kind: str
+    value: str
+    position: int
+
+
+def tokenize(source: str) -> Iterator[Token]:
+    position = 0
+    while position < len(source):
+        match = TOKEN_RE.match(source, position)
+        if match is None:
+            raise ParseError("unexpected character", position)
+        number, symbol = match.groups()
+        if number is not None:
+            yield Token("number", number, match.start(1))
+        else:
+            yield Token("op", symbol, match.start(2))
+        position = match.end()
+    yield Token("end", "", position)
+
+
+class Parser:
+    def __init__(self, source: str) -> None:
+        self._tokens = list(tokenize(source))
+        self._index = 0
+
+    def _advance(self) -> Token:
+        token = self._tokens[self._index]
+        self._index += 1
+        return token
+
+    def parse(self) -> float:
+        value = self._expression(0)
+        token = self._tokens[self._index]
+        if token.kind != "end":
+            raise ParseError(f"unexpected {token.value!r}", token.position)
+        return value
+
+    def _expression(self, min_precedence: int) -> float:
+        left = self._unary()
+        while True:
+            token = self._tokens[self._index]
+            if token.kind != "op" or token.value not in BINARY_OPS:
+                return left
+            precedence, func = BINARY_OPS[token.value]
+            if precedence < min_precedence:
+                return left
+            self._advance()
+            next_min = precedence if token.value in RIGHT_ASSOCIATIVE else precedence + 1
+            left = func(left, self._expression(next_min))
+
+    def _unary(self) -> float:
+        token = self._advance()
+        if token.kind == "number":
+            return float(token.value)
+        if token.value == "-":
+            return -self._unary()
+        if token.value == "(":
+            value = self._expression(0)
+            closing = self._advance()
+            if closing.value != ")":
+                raise ParseError("expected ')'", closing.position)
+            return value
+        raise ParseError(f"unexpected {token.value!r}", token.position)

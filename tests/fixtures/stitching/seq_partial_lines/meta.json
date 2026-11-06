@@ -1,0 +1,7 @@
+{
+  "description": "Three unnumbered frames whose top and bottom edges clip a line (partial: true). The clipped transcriptions are garbled (frame 1 ends with 'def fo' for line 44, 'def format_report(...)') and must not reach the output. Every clipped line is fully visible in a neighbouring frame (REQ-STI-02). The output equals the source.",
+  "uses_line_numbers": false,
+  "expected_events": [],
+  "expected_conflicts": [],
+  "expected_flags": []
+}

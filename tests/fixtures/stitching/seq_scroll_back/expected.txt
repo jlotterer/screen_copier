@@ -1,0 +1,88 @@
+{
+  "name": "orders-service",
+  "version": "2.4.1",
+  "environment": "staging",
+  "listen": {
+    "host": "0.0.0.0",
+    "port": 8080,
+    "read_timeout_ms": 15000,
+    "write_timeout_ms": 30000
+  },
+  "database": {
+    "driver": "postgres",
+    "host": "db.internal.example",
+    "port": 5432,
+    "name": "orders",
+    "pool": {
+      "min_connections": 2,
+      "max_connections": 20,
+      "idle_timeout_s": 300
+    },
+    "migrations_dir": "./migrations"
+  },
+  "cache": {
+    "backend": "redis",
+    "url": "redis://cache.internal.example:6379/0",
+    "default_ttl_s": 120,
+    "key_prefix": "orders:"
+  },
+  "queues": [
+    {
+      "name": "order-created",
+      "visibility_timeout_s": 60,
+      "max_receive_count": 5,
+      "dead_letter": "order-created-dlq"
+    },
+    {
+      "name": "payment-settled",
+      "visibility_timeout_s": 120,
+      "max_receive_count": 3,
+      "dead_letter": "payment-settled-dlq"
+    },
+    {
+      "name": "shipment-dispatched",
+      "visibility_timeout_s": 90,
+      "max_receive_count": 8,
+      "dead_letter": null
+    }
+  ],
+  "features": {
+    "split_shipments": true,
+    "gift_wrapping": false,
+    "express_checkout": true,
+    "loyalty_points": {
+      "enabled": true,
+      "points_per_euro": 10,
+      "expiry_days": 365
+    }
+  },
+  "rate_limits": {
+    "default": { "rate": 50, "burst": 100 },
+    "by_route": {
+      "/v1/orders": { "rate": 20, "burst": 40 },
+      "/v1/orders/search": { "rate": 5, "burst": 10 },
+      "/v1/refunds": { "rate": 2, "burst": 4 }
+    }
+  },
+  "logging": {
+    "level": "info",
+    "format": "json",
+    "redact_fields": ["card_number", "cvv", "email", "phone"],
+    "sample_rate": 0.25
+  },
+  "telemetry": {
+    "service_name": "orders",
+    "otlp_endpoint": "http://otel-collector.internal.example:4317",
+    "export_interval_ms": 10000,
+    "resource_attributes": {
+      "team": "checkout",
+      "tier": "critical",
+      "region": "eu-west-1"
+    }
+  },
+  "allowed_origins": [
+    "https://shop.example.com",
+    "https://admin.example.com",
+    "http://localhost:5173"
+  ]
+}

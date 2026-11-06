@@ -1,0 +1,46 @@
+from __future__ import annotations
+
+import csv
+import io
+import json
+from collections.abc import Iterable, Mapping
+
+SUPPORTED = ("csv", "json", "jsonl")
+
+
+def export_rows(rows: Iterable[Mapping[str, object]], fmt: str) -> str:
+    fmt = fmt.lower()
+    if fmt == "csv":
+        return _to_csv(list(rows))
+    if fmt == "json":
+        return json.dumps(list(rows), indent=2, default=str)
+    if fmt == "jsonl":
+        return "\n".join(json.dumps(row, default=str) for row in rows)
+    raise ValueError(f"unsupported export format {fmt!r};
+    expected one of {', '.join(SUPPORTED)}")
+
+
+def _to_csv(rows: list[Mapping[str, object]]) -> str:
+    if not rows:
+        return ""
+    fieldnames: list[str] = []
+    for row in rows:
+        for key in row:
+            if key not in fieldnames:
+                fieldnames.append(key)
+    buffer = io.StringIO()
+    writer = csv.DictWriter(buffer, fieldnames=fieldnames, extrasaction="ignore")
+    writer.writeheader()
+    for row in rows:
+        writer.writerow({key: _cell(row.get(key)) for key in fieldnames})
+    return buffer.getvalue()
+
+
+def _cell(value: object) -> str:
+    if value is None:
+        return ""
+    if isinstance(value, bool):
+        return "yes" if value else "no"
+    if isinstance(value, float):
+        return f"{value:.2f}"
+    return str(value)
