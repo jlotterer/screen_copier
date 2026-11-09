@@ -9,9 +9,12 @@ Screen Copier is a Windows 11 desktop app (Python + PySide6). A laptop webcam is
 | [docs/architecture.md](docs/architecture.md) | **How** it is built: components, data model, contracts, algorithms, tunable defaults. |
 | [docs/decisions/](docs/decisions/) | **Why** key choices were made. Read these before proposing to change the stack or the approach. |
 | [docs/tasks/](docs/tasks/) | One brief per task, plus [the index](docs/tasks/README.md) with waves and dependencies. |
+| [specs/001-screen-copier/](specs/001-screen-copier/) | **The live briefs** orch runs: `tasks.md` (phases), one brief per task under `tasks/`, and `spec.md` with the shared contracts. `docs/tasks/` is the original plan and stays for reference. |
 | `tests/fixtures/stitching/` | Executable spec for stitching. Expected outputs live here. |
 
 Once code exists, **code is the source of truth for contracts** (`src/screen_copier/models.py`, `recognition/base.py`, `controller.py`). If code and architecture.md disagree, follow the code and fix the doc in the same PR.
+
+Agents follow [AGENTS.md](AGENTS.md).
 
 ## Stack (locked; see decision records 0001–0005)
 - Python `>=3.12,<3.14`, managed with **uv**

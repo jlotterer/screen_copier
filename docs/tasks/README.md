@@ -1,3 +1,5 @@
+> **Note:** orch now runs the tasks from [specs/001-screen-copier/](../../specs/001-screen-copier/), and the briefs there are the live ones. The briefs below are the original plan and are kept for reference.
+
 # Task Index
 
 Each task is a self-contained brief for one agent session and one PR. Start with [CLAUDE.md](../../CLAUDE.md), then read the brief, then only the sections it links to.
