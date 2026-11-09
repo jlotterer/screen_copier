@@ -1,5 +1,5 @@
 # TASK-08: Stitching core (overlap mode, segments, gaps, voting)
-**Status:** todo · **Wave:** 3 · **Depends on:** TASK-02, TASK-03 · **Parallel:** Yes
+**Status:** done · **Wave:** 3 · **Depends on:** TASK-02, TASK-03 · **Parallel:** Yes
 
 ## Goal
 Implement the pure stitcher so that every non-line-number fixture from TASK-03 passes.

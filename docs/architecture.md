@@ -287,7 +287,22 @@ client.messages.create(
 | `SCREEN_COPIER_FAKE_RECOGNIZER` | Folder of `<seq>.json` FrameResults | `tests/fixtures/recognizer/seq_basic/` |
 
 ## 9. Stitching
-`Stitcher` is pure: `stitch(results: list[tuple[int, FrameResult]]) -> StitchOutput(document, events)`. An incremental `add(seq, result)` must produce the same state as a batch run (REQ-STI-01). Recommended: implement `add` as the primitive and make batch a fold over it.
+`Stitcher` is pure _(→ code: `stitching/stitcher.py`)_:
+```python
+class Stitcher:
+    def __init__(self, settings) -> None: ...          # reads min_overlap_lines, line_similarity
+    def add(self, seq: int, result: FrameResult) -> list[StitchEvent]: ...  # seq strictly increasing
+    def document(self) -> Document: ...                 # a fresh copy on every call
+    def render(self) -> str: ...
+    def issue_count(self) -> int: ...
+    def uses_line_numbers(self, result, lines) -> bool: ...  # §9.3 hook; False until TASK-09
+
+def stitch(results: Iterable[tuple[int, FrameResult]], settings) -> StitchOutput(document, events)
+def render(document) -> str
+def render_items(document) -> list[DocLine | Gap]   # render order; line i of render() is item i
+def issue_count(document) -> int
+```
+`add` is the primitive and `stitch` is a fold over it, so incremental and batch give the same state (REQ-STI-01). `add` raises `ValueError` if `seq` isn't greater than the previous one. A frame with no lines left after the partial-line pre-filter changes nothing.
 
 ### 9.1 Normalization & matching (`stitching/normalize.py`)
 - `normalize(s)`: strip, then collapse internal whitespace runs to one space. Used for matching only. Output keeps the original text.
@@ -310,9 +325,14 @@ Applying:
 - Overlapping lines add observations (§9.4).
 - Non-overlapping lines are appended or prepended as new DocLines.
 
+- Rule 2 is the fixed constant `MIN_MATCH_PERCENT = 90` in `overlap.py` (not a setting). In rule 1, a line counts as a distinctive match when the frame line and the segment line are both distinctive.
+- Rule 3 excludes a frame that covers a whole segment and extends past both of its ends.
+
+**First frame:** the first frame placed into an empty document starts segment 0, with no event.
+
 **Unplaced frame:** becomes a new segment, inserted right after the segment that received the previous frame. Emit `gap_detected`.
 
-**Bridging:** after applying, test the modified segment against its neighbors with the same validity rule, treating the neighbor as the frame. If valid → merge the two segments and emit `gap_closed`.
+**Bridging:** after applying, test the modified segment against its neighbors with the same validity rule, treating the neighbor as the frame. If valid (and not ambiguous) → merge the two segments and emit `gap_closed`. Repeat until no neighbor fits, since one frame can close several gaps. Unplaced frames are not bridge-tested.
 
 ### 9.3 Line-number mode (`stitching/linenum.py`)
 - **When it applies:** to a frame with `has_line_numbers = true` and ≥2 non-partial lines with a `line_number`.
@@ -335,9 +355,11 @@ Other flags:
 
 ### 9.5 Rendering, events, discard
 - **Rendering:** segments are joined in order with one gap marker line between consecutive segments, plus any line-number gaps. Gap marker text is `<<<SCREEN-COPIER GAP: {description}>>>`. For overlap gaps the description is `unknown lines between capture {a} and {b}`.
-- **Events** (consumed by the controller): `gap_detected`, `gap_closed`, `ambiguous_overlap`, `cut_off`, `word_wrap`. Each carries the frame seq.
+- **Overlap gap description:** `unknown lines between capture {a} and {b}`, where `a` is the highest `frame_seq` observing the last line of the segment above, and `b` the lowest `frame_seq` observing the first line of the segment below.
+- **Events** (consumed by the controller): `gap_detected`, `gap_closed`, `ambiguous_overlap`, `cut_off`, `word_wrap`. Each carries the frame seq. A frame emits **at most one event per kind**. `cut_off` is emitted when any non-partial line of the frame has `cut_off_right`; `word_wrap` when the frame has `word_wrap_detected` (in any mode), and by line-number mode for continuation lines (§9.3).
+- **Issues** (`issue_count`): every DocLine with at least one flag counts once, plus every gap (REQ-REV-03).
 - **Discard:** re-run the batch stitch over the remaining frames (REQ-STI-10).
-- **Performance:** matching only checks offsets near segment ends first; use a full scan only for containment. Target ≤200 ms per add on a 2,000-line document (REQ-STI-11).
+- **Performance:** every offset with a non-empty overlap is scored, because ambiguity detection needs all valid candidates. Each offset stops at the first mismatch that breaks rule 2, and `normalized_match` is cached and rejects most pairs with cheap upper bounds before computing `SequenceMatcher.ratio`. Target ≤200 ms per add on a 2,000-line document (REQ-STI-11); measured about 60 ms.
 
 ## 10. Data Model & Persistence
 ### 10.1 Entities (`models.py`, pydantic v2) _(→ code)_
