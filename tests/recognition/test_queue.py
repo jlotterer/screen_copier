@@ -99,13 +99,18 @@ class Blocked:
 
 
 class FakeSleep:
+    """Records each wait. Returns at once, or blocks until ``release`` is set if one is given."""
+
     def __init__(self) -> None:
         self.waits: list[float] = []
+        self.release: threading.Event | None = None
         self._lock = threading.Lock()
 
     def __call__(self, seconds: float) -> None:
         with self._lock:
             self.waits.append(seconds)
+        if self.release is not None:
+            assert self.release.wait(5), "fake sleep was never released"
 
 
 class Recorder:
@@ -359,22 +364,24 @@ def test_offline_after_three_connection_errors_and_back_online(qtbot, make_queue
 def test_offline_holds_other_frames_and_probes_oldest(qtbot, make_queue, sleep) -> None:  # type: ignore[no-untyped-def]
     conn = Retryable("timeout", connection_error=True)
     probe = threading.Event()
-    # Frames 1-3 each fail once with a connection error: 3 in a row -> offline.
-    # Frame 1 (the oldest) is then probed: blocked, a connection error, another one, then Ok.
+    # Waits block until released, so no frame is re-sent before the queue goes offline.
+    sleep.release = threading.Event()
+    # Frames 1-3 each fail once with a connection error, in any order: 3 in a row -> offline.
+    # Frame 1 (the oldest) is then probed: blocked then a connection error, another one, then Ok.
     recognizer = ScriptedRecognizer({1: [conn, Blocked(probe, conn), conn], 2: [conn], 3: [conn]})
     queue, rec = make_queue(recognizer)
-    gates = {seq: threading.Event() for seq in (1, 2, 3)}
-    recognizer.gates.update(gates)
     submit_all(queue, [1, 2, 3])
-    qtbot.waitUntil(lambda: len(recognizer.calls) == 3)
-    for gate in gates.values():
-        gate.set()
     qtbot.waitUntil(lambda: rec.offline == [True])
-    qtbot.waitUntil(lambda: len(recognizer.calls) == 4)
+    assert sorted(recognizer.calls) == [1, 2, 3]
     assert queue.offline
+    # Going offline switched the oldest frame to the probe interval, whatever order 1-3 failed in.
+    qtbot.waitUntil(lambda: any(w > 10 for w in sleep.waits))
+    assert [queue.status(s) for s in (1, 2, 3)] == [FrameStatus.QUEUED] * 3
 
     # While offline, a new frame and frames 2 and 3 are held; only the oldest frame is tried.
     queue.submit(4, b"jpeg")
+    sleep.release.set()
+    qtbot.waitUntil(lambda: len(recognizer.calls) == 4)
     qtbot.wait(100)
     assert recognizer.calls[3:] == [1]
     assert [queue.status(s) for s in (2, 3, 4)] == [FrameStatus.QUEUED] * 3
@@ -384,10 +391,9 @@ def test_offline_holds_other_frames_and_probes_oldest(qtbot, make_queue, sleep) 
     qtbot.waitUntil(lambda: rec.results == [1, 2, 3, 4], timeout=TIMEOUT_MS)
     assert recognizer.calls[3:6] == [1, 1, 1]
     assert sorted(recognizer.calls[6:]) == [2, 3, 4]
-    # Each offline probe after a failure waited the probe interval. (Frame 1's first failure
-    # also waits one when its outcome is the one that tipped the queue offline.)
+    # One probe wait on going offline, then one after each failed probe.
     probes = [w for w in sleep.waits if w > 10]
-    assert len(probes) in (2, 3)
+    assert len(probes) == 3
     assert all(OFFLINE_PROBE_INTERVAL_S - 1 <= w <= OFFLINE_PROBE_INTERVAL_S for w in probes)
     # Offline attempts do not use up the retry budget: nothing failed.
     assert all(queue.status(s) is FrameStatus.RECOGNIZED for s in (1, 2, 3, 4))

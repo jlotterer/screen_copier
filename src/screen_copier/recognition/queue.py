@@ -321,6 +321,7 @@ class RecognitionQueue(QObject):
                 self._offline = True
                 log.info("Recognition is offline")
                 self.offline_changed.emit(True)
+                self._schedule_offline_probe_for_oldest()
             return
         # Any outcome that got an HTTP response proves the connection is back.
         self._consecutive_connection_errors = 0
@@ -359,11 +360,11 @@ class RecognitionQueue(QObject):
     def _on_retryable(self, entry: _Entry, outcome: Retryable) -> None:
         if self._offline and outcome.connection_error:
             # Offline attempts do not use up the retry budget: the frame waits for the network.
+            # Held frames stay ready; _pump only dispatches the oldest one while offline.
             self._set_status(entry, FrameStatus.QUEUED)
+            entry.ready = True
             if entry is self._oldest_unfinished():
-                started = entry.last_started if entry.last_started is not None else self._clock()
-                elapsed = self._clock() - started
-                self._schedule_wait(entry, max(0.0, OFFLINE_PROBE_INTERVAL_S - elapsed))
+                self._schedule_offline_probe(entry)
             return
         entry.retryable_failures += 1
         if entry.retryable_failures >= MAX_RETRYABLE_ATTEMPTS:
@@ -373,6 +374,24 @@ class RecognitionQueue(QObject):
         delay = base * (1.0 + self._rng.uniform(0.0, BACKOFF_JITTER))
         self._set_status(entry, FrameStatus.QUEUED)
         self._schedule_wait(entry, delay)
+
+    def _schedule_offline_probe(self, entry: _Entry) -> None:
+        """Wait until 15 s after the frame's last attempt started (no wait if never tried)."""
+        if entry.last_started is None:
+            entry.token += 1  # drop any pending backoff wait
+            entry.ready = True
+            return
+        elapsed = self._clock() - entry.last_started
+        self._schedule_wait(entry, max(0.0, OFFLINE_PROBE_INTERVAL_S - elapsed))
+
+    def _schedule_offline_probe_for_oldest(self) -> None:
+        """On going offline, switch the oldest waiting frame from its backoff to the probe timer.
+
+        A frame still in flight gets its probe timer when its outcome arrives (``_on_retryable``).
+        """
+        oldest = self._oldest_unfinished()
+        if oldest is not None and oldest.status is FrameStatus.QUEUED:
+            self._schedule_offline_probe(oldest)
 
     def _fail(self, entry: _Entry, error: str) -> None:
         self._set_status(entry, FrameStatus.FAILED, error)
