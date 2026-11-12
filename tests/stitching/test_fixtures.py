@@ -2,7 +2,8 @@
 
 Every fixture in ``tests/fixtures/stitching/`` is stitched incrementally and in batch, and the
 result is compared with ``expected.txt``, ``expected_events``, ``expected_conflicts`` and
-``expected_flags``. Fixtures with ``uses_line_numbers: true`` are ``xfail`` until TASK-09.
+``expected_flags``. Overlap-mode and line-number-mode fixtures (``uses_line_numbers: true``)
+run the same way; none is ``xfail``.
 """
 
 from __future__ import annotations
@@ -43,23 +44,26 @@ def _load(path: Path) -> Fixture:
 
 
 def _params() -> list[Any]:
-    params = []
-    for path in sorted(p for p in FIXTURES.iterdir() if (p / "meta.json").is_file()):
-        fixture = _load(path)
-        marks = []
-        if fixture.meta["uses_line_numbers"]:
-            marks.append(pytest.mark.xfail(reason="line-number mode is TASK-09", strict=False))
-        params.append(pytest.param(fixture, id=fixture.name, marks=marks))
-    return params
+    return [
+        pytest.param(fixture, id=fixture.name)
+        for fixture in (
+            _load(path)
+            for path in sorted(p for p in FIXTURES.iterdir() if (p / "meta.json").is_file())
+        )
+    ]
 
 
 FIXTURE_PARAMS = _params()
-ALL_FIXTURES = [pytest.param(p.values[0], id=p.id) for p in FIXTURE_PARAMS]
-"""Without the TASK-09 xfail: properties that hold in any mode."""
 
 
 def test_fixtures_found() -> None:
     assert len(FIXTURE_PARAMS) >= 12
+    numbered = [p for p in FIXTURE_PARAMS if p.values[0].meta["uses_line_numbers"]]
+    assert len(numbered) >= 4
+
+
+def test_no_fixture_is_xfail() -> None:
+    assert all(not p.marks for p in FIXTURE_PARAMS)
 
 
 # --------------------------------------------------------------------------------------------
@@ -136,7 +140,7 @@ def test_batch(fixture: Fixture) -> None:
     _check(fixture, output.document, output.events)
 
 
-@pytest.mark.parametrize("fixture", ALL_FIXTURES)
+@pytest.mark.parametrize("fixture", FIXTURE_PARAMS)
 def test_incremental_equals_batch(fixture: Fixture) -> None:
     stitcher = Stitcher(Settings())
     for seq, result in fixture.frames:
