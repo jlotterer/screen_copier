@@ -407,11 +407,12 @@ def test_issue_count_function() -> None:
 # --------------------------------------------------------------------------------------------
 
 
-def test_numbered_frames_use_overlap_mode_until_task_09(stitcher: Stitcher) -> None:
+def test_numbered_frames_use_line_number_mode(stitcher: Stitcher) -> None:
     numbered = frame([line(t, number=i) for i, t in enumerate(src(1, 10), start=1)], numbered=True)
-    assert stitcher.uses_line_numbers(numbered, numbered.lines) is False
+    assert stitcher.uses_line_numbers(numbered, numbered.lines) is True
     stitcher.add(1, numbered)
     assert body(stitcher.render()) == src(1, 10)
+    assert stitcher.document().segments[0].first_line_number == 1
 
 
 def test_uses_line_numbers_hook_routes_frames() -> None:

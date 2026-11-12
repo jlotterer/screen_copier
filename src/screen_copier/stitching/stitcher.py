@@ -4,8 +4,10 @@ Pure logic: must not import PySide6. ``Stitcher.add`` is the primitive; ``stitch
 it, so building the document one frame at a time and all at once give the same result
 (REQ-STI-01). Discarding a frame is a fresh ``stitch`` of the remaining frames (REQ-STI-10).
 
-Line-number mode (§9.3) plugs in through ``Stitcher.uses_line_numbers`` and
-``Stitcher._add_numbered`` (TASK-09). Until then every frame goes through overlap mode.
+Line-number mode (§9.3, ``linenum.py``) plugs in through ``Stitcher.uses_line_numbers`` and
+``Stitcher._add_numbered``. Lines placed by number live in a map from ``linenum.Key`` to line;
+the numbered segments are rebuilt from it as runs of contiguous numbers. Unnumbered overlap
+segments keep their place after the numbered segment they followed.
 """
 
 from __future__ import annotations
@@ -27,6 +29,7 @@ from screen_copier.models import (
     StitchEvent,
     StitchEventKind,
 )
+from screen_copier.stitching import linenum
 from screen_copier.stitching.overlap import Candidate, MatchLine, choose, find_candidates
 from screen_copier.stitching.resolve import resolve
 
@@ -67,6 +70,8 @@ class _Line:
     flags: frozenset[DocLineFlag] = frozenset()
     alternatives: tuple[str, ...] = ()
     match: MatchLine = _BLANK
+    key: linenum.Key | None = None
+    """The line's place in line-number mode, or None in an unnumbered segment."""
 
     def __post_init__(self) -> None:
         self._resolve()
@@ -98,6 +103,16 @@ class _Line:
 class _Segment:
     lines: list[_Line]
     first_line_number: int | None = None
+
+    @property
+    def numbered(self) -> bool:
+        return self.lines[0].key is not None
+
+    def keys(self) -> list[linenum.Key]:
+        """The line-number keys of a numbered segment's lines."""
+        keys = [line.key for line in self.lines if line.key is not None]
+        assert len(keys) == len(self.lines), "not a numbered segment"
+        return keys
 
     def match_lines(self) -> list[MatchLine]:
         return [line.match for line in self.lines]
@@ -136,6 +151,8 @@ class Stitcher:
         self._last_segment: _Segment | None = None
         """The segment that received the previous frame. An unplaced frame goes right after it."""
         self._last_seq = 0
+        self._numbered: dict[linenum.Key, _Line] = {}
+        """Every line placed by number (§9.3). Numbered segments are rebuilt from it."""
         self._document: Document | None = None
 
     # -- public API -------------------------------------------------------------------------
@@ -169,16 +186,15 @@ class Stitcher:
     def issue_count(self) -> int:
         return issue_count(self._current_document())
 
-    # -- line-number mode extension point (TASK-09) -----------------------------------------
+    # -- line-number mode (§9.3) ------------------------------------------------------------
 
     def uses_line_numbers(self, result: FrameResult, lines: Sequence[RecognizedLine]) -> bool:
         """Whether this frame is placed by line number (§9.3) instead of by overlap (§9.2).
 
-        ``lines`` is the frame after the partial-line pre-filter. Extension point for
-        TASK-09: until line-number mode lands this returns False, so numbered frames go through
-        overlap mode like any other frame.
+        ``lines`` is the frame after the partial-line pre-filter: ``has_line_numbers`` and at
+        least two numbered lines are needed.
         """
-        return False
+        return linenum.uses_line_numbers(result, lines)
 
     def _add_numbered(
         self,
@@ -187,8 +203,94 @@ class Stitcher:
         lines: Sequence[RecognizedLine],
         kinds: list[StitchEventKind],
     ) -> None:
-        """Place a numbered frame (§9.3), appending event kinds to ``kinds``. TASK-09."""
-        raise NotImplementedError("line-number mode is TASK-09")
+        """Place a numbered frame (§9.3), appending event kinds to ``kinds``.
+
+        Each line is an observation of the document line with its key. A continuation line
+        (no number of its own) gets the ``soft_wrap`` flag and causes ``word_wrap``.
+        """
+        placements = linenum.place_frame(lines)
+        for placement in placements:
+            flags = {DocLineFlag.SOFT_WRAP} if placement.soft_wrap else set()
+            self._put(placement.key, _Line([_observation(seq, placement.line)], flags))
+        if any(placement.soft_wrap for placement in placements):
+            kinds.append(StitchEventKind.WORD_WRAP)
+        self._renumber()
+        segment = self._run_of(placements[0].key)
+        self._last_segment = segment
+        if self._bridge(segment):  # an unnumbered segment may now line up with this one
+            kinds.append(StitchEventKind.GAP_CLOSED)
+
+    def _put(self, key: linenum.Key, line: _Line) -> None:
+        existing = self._numbered.get(key)
+        if existing is None:
+            line.key = key
+            self._numbered[key] = line
+        else:
+            existing.absorb(line)
+
+    def _merge_numbered(self, segment: _Segment, offset: int, incoming: Sequence[_Line]) -> None:
+        """Lay unnumbered lines over a numbered segment: they inherit numbers from alignment."""
+        keys = segment.keys()
+        above = linenum.keys_above(keys[0], max(0, -offset))
+        below = linenum.keys_below(keys[-1], max(0, offset + len(incoming) - len(keys)))
+        for i, line in enumerate(incoming):
+            j = offset + i
+            if j < 0:
+                key = above[j + len(above)]
+            elif j >= len(keys):
+                key = below[j - len(keys)]
+            else:
+                key = keys[j]
+            self._put(key, line)
+
+    def _merge(self, segment: _Segment, offset: int, incoming: Sequence[_Line]) -> _Segment:
+        """Merge ``incoming`` into ``segment`` at ``offset``; return the resulting segment."""
+        if not segment.numbered:
+            segment.merge(offset, incoming)
+            return segment
+        first = segment.lines[0].key
+        assert first is not None
+        self._merge_numbered(segment, offset, incoming)
+        self._renumber()
+        return self._run_of(first)
+
+    def _renumber(self) -> None:
+        """Rebuild the numbered segments from ``_numbered`` as runs of contiguous numbers.
+
+        Each unnumbered segment stays right after the numbered line it followed (or at the top).
+        """
+        last_key = (
+            self._last_segment.lines[0].key
+            if self._last_segment is not None and self._last_segment.numbered
+            else None
+        )
+        after: dict[linenum.Key | None, list[_Segment]] = {}
+        anchor: linenum.Key | None = None
+        for segment in self._segments:
+            if segment.numbered:
+                anchor = segment.lines[-1].key
+            else:
+                after.setdefault(anchor, []).append(segment)
+        rebuilt: list[_Segment] = list(after.pop(None, []))
+        for run in linenum.runs(self._numbered):
+            rebuilt.append(
+                _Segment(
+                    [self._numbered[key] for key in run],
+                    first_line_number=linenum.first_line_number(run),
+                )
+            )
+            for key in run:
+                rebuilt.extend(after.pop(key, []))
+        self._segments = rebuilt
+        if last_key is not None:
+            self._last_segment = self._run_of(last_key)
+
+    def _run_of(self, key: linenum.Key) -> _Segment:
+        line = self._numbered[key]
+        for segment in self._segments:
+            if segment.numbered and any(candidate is line for candidate in segment.lines):
+                return segment
+        raise LookupError(f"no segment holds line {key}")
 
     # -- overlap mode (§9.2) ----------------------------------------------------------------
 
@@ -214,8 +316,7 @@ class Stitcher:
             kinds.append(StitchEventKind.GAP_DETECTED)
             return
 
-        segment = self._segments[choice.best.segment]
-        segment.merge(choice.best.offset, incoming)
+        segment = self._merge(self._segments[choice.best.segment], choice.best.offset, incoming)
         self._last_segment = segment
         if self._bridge(segment):
             kinds.append(StitchEventKind.GAP_CLOSED)
@@ -230,7 +331,9 @@ class Stitcher:
         """Merge ``segment`` with any neighbor that now validly overlaps it (§9.2 bridging).
 
         The neighbor is treated as the frame. An ambiguous fit doesn't merge. Repeats until no
-        neighbor fits, since a merge can bring the next segment into reach.
+        neighbor fits, since a merge can bring the next segment into reach. Two numbered
+        segments are never merged by content: their numbers already place them. When one side is
+        numbered, the unnumbered side inherits numbers from the alignment (§9.3).
         """
         merged_any = False
         merged = True
@@ -241,6 +344,8 @@ class Stitcher:
                 if not 0 <= neighbor_index < len(self._segments):
                     continue
                 neighbor = self._segments[neighbor_index]
+                if segment.numbered and neighbor.numbered:
+                    continue
                 choice = choose(
                     Candidate(neighbor_index, offset, score)
                     for offset, score in self._candidates(
@@ -249,9 +354,17 @@ class Stitcher:
                 )
                 if choice.best is None:
                     continue
-                segment.merge(choice.best.offset, neighbor.lines)
-                del self._segments[neighbor_index]
-                if self._last_segment is neighbor:
+                if neighbor.numbered:  # lay the unnumbered segment over the numbered neighbor
+                    base, offset, incoming = neighbor, -choice.best.offset, segment.lines
+                    del self._segments[index]
+                else:
+                    base, offset, incoming = segment, choice.best.offset, neighbor.lines
+                    del self._segments[neighbor_index]
+                was_last = self._last_segment in (segment, neighbor)
+                if was_last:
+                    self._last_segment = None  # removed segments must not anchor a renumber
+                segment = self._merge(base, offset, incoming)
+                if was_last:
                     self._last_segment = segment
                 merged = merged_any = True
                 break
@@ -283,8 +396,10 @@ class Stitcher:
     def _build_document(self) -> Document:
         segments: list[Segment] = []
         gaps: list[Gap] = []
+        previous_run: list[linenum.Key] | None = None
         for index, segment in enumerate(self._segments):
-            if index > 0:
+            numbered_pair = index > 0 and segment.numbered and self._segments[index - 1].numbered
+            if index > 0 and not numbered_pair:
                 above = self._segments[index - 1].lines[-1]
                 below = segment.lines[0]
                 a = max(obs.frame_seq for obs in above.observations)
@@ -296,6 +411,14 @@ class Stitcher:
                         before_segment=index,
                     )
                 )
+            if segment.numbered:
+                run = segment.keys()
+                missing = linenum.missing_before(run, previous_run, self._numbered)
+                if missing:
+                    gaps.append(
+                        Gap(kind=GapKind.LINE_NUMBERS, description=missing, before_segment=index)
+                    )
+                previous_run = run
             segments.append(
                 Segment.model_construct(
                     lines=[line.to_model() for line in segment.lines],
