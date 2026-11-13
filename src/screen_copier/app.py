@@ -75,6 +75,11 @@ def build_parser() -> argparse.ArgumentParser:
         version=get_version(),
         help="print the version and exit",
     )
+    parser.add_argument(
+        "--create-shortcut",
+        action="store_true",
+        help='create a "Screen Copier" desktop shortcut and exit',
+    )
     return parser
 
 
@@ -360,9 +365,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     """Run the app. Returns the process exit code."""
     args = list(sys.argv[1:] if argv is None else argv)
     try:
-        build_parser().parse_args(args)
+        options = build_parser().parse_args(args)
     except SystemExit as exc:  # --version / --help / bad args
         return exc.code if isinstance(exc.code, int) else 0
+    if options.create_shortcut:
+        from screen_copier import shortcut
+
+        return shortcut.create_shortcut()
 
     app = QApplication.instance() or QApplication([sys.argv[0], *args])
     app.setApplicationName(APP_NAME)
