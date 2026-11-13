@@ -489,7 +489,8 @@ class ReviewView(QWidget):
     def current_item(self) -> DocLine | Gap | None:
         """The rendered item the cursor's line came from (``None`` for new text)."""
         index = self._frame_map.get(self.editor.current_line())
-        return None if index is None else self._items[index]
+        # The map can be stale while new text is being set (it is rebuilt right after).
+        return None if index is None or index >= len(self._items) else self._items[index]
 
     def shown_frames(self) -> list[int]:
         return self.frame_panel.frames()
