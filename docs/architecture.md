@@ -446,16 +446,23 @@ Other flags:
 | `auth_required` | — | §7.4 |
 | `camera_error` | `kind` (`not_found` / `unavailable` / `disconnected`), `message` | §5.1 |
 | `consent_required` | — | Before the first API call if not yet acknowledged |
+| `resolution` | `int`, `int` | Camera resolution in use |
 
 **Slots:** `capture_now()`, `set_auto(bool)`, `discard_frame(seq)`, `retry_frame(seq)`, `rerecognize_frame(seq)`, `lock_region(quad | None)`, `select_camera(id)`, `acknowledge_consent()`, `new_session()`, `resume_session(id)`, `set_edited_text(str | None)`.
+
+**Lifecycle (for T019):** `start_camera()`, `stop_camera()`, `shutdown()` (stops the camera and queues, waits for pending disk writes). Constructor arguments (keyword-only, all injectable): `store`, `recognizer`, `settings`, `camera_worker_factory(camera_id, settings)`, `queue_factory(recognizer)`, `persist_settings(settings)`, `process_fn`, `clock` (UTC datetime) and `timers` (`call_later(delay_s, fn) -> cancel`).
 
 **Warning lifecycle:**
 - `gap` stays active while the document has ≥1 overlap gap.
 - `offline` mirrors the queue's state.
 - `cut_off` and `word_wrap` stay active until dismissed or until a later frame no longer shows the condition.
 - `blurry` clears after 3 s.
+- `ambiguous_overlap`, `cut_off` and `word_wrap` are raised again on every frame that shows them.
+- `never_settles` and `low_resolution` mirror the camera worker's hints.
 
-**Consent gate:** frames are captured and saved, but the queue isn't started until consent is acknowledged.
+**Consent gate:** frames are captured and saved, but nothing is submitted to the queue until consent is acknowledged; `consent_required` is emitted once when a frame is held.
+
+**Persistence:** preprocessing and all disk I/O run in order on one background thread, so a frame's JPEG is written before the `session.json` that refers to it, and both before the frame is submitted. A frame stays `recognizing` in the session until its result is released in order (`result_ready`), because a `recognized` frame must carry its result.
 
 ## 13. Output
 ### 13.1 Language (`output/language.py`)
